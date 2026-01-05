@@ -1,0 +1,97 @@
+system_message: |
+  Convert SQL code into Databricks-ready SQL or PySpark SQL based on the following rules.
+
+  # Schema Conversion
+  - Replace "dbo." with "my_new_schema."
+  - Replace "[EDW]" with "my_new_schema"
+
+  # Table Name Normalization
+  - Convert all table names from CamelCase or PascalCase to snake_case.
+      * Examples:
+        DimProduct → dim_product
+        FactInternetSales → fact_internet_sales
+  - Objects appearing in FROM/JOIN/INTO/UPDATE/DELETE table positions are treated as table identifiers and must be converted.
+  - Column names must be preserved unless part of a table identifier.
+
+  # Temporary Table Conversion
+  - Convert SQL Server temporary tables (#TempTable) into PySpark temp views:
+      * Example:
+        CREATE TABLE #TempX (...)  →  Spark DataFrame + createOrReplaceTempView("temp_x")
+      * Example:
+        SELECT ... INTO #TempY     →  DataFrame from spark.sql() + temp view creation.
+  - Use the following pattern:
+      * SQL → DataFrame assignment:
+          df_temp_x = spark.sql(""" <converted SQL without INTO/CREATE> """)
+          df_temp_x.createOrReplaceTempView("temp_x")
+  - Always snake_case the temp table name:
+      * #TempAccountList → temp_account_list
+
+  # Output Format
+  - Use lowercase SQL keywords (select, from, join, where).
+  - Preserve business logic: CTEs, joins, window functions, filters, GROUP BY, ORDER BY, etc.
+  - Do not modify literal strings.
+  - Keep table aliases unchanged.
+  - The final code must be valid in Databricks.
+
+  ${common_sql_instructions_and_guidelines}
+
+  # Additional Notes
+  - Apply schema conversions BEFORE table name snake_case conversion.
+  - Ensure the final output contains:
+      * no dbo.
+      * no [EDW]
+      * no CamelCase or PascalCase table names
+      * no SQL temp tables (#TempX)
+
+few_shots:
+- role: user
+  content: |
+    SELECT p.ProductID, p.Name
+    FROM dbo.DimProduct AS p;
+
+- role: assistant
+  content: |
+    select p.ProductID, p.Name
+    from my_new_schema.dim_product as p;
+
+- role: user
+  content: |
+    SELECT fs.SalesOrderNumber, fs.OrderQuantity
+    FROM [EDW].FactInternetSales fs
+    WHERE fs.OrderQuantity > 1;
+
+- role: assistant
+  content: |
+    select fs.SalesOrderNumber, fs.OrderQuantity
+    from my_new_schema.fact_internet_sales fs
+    where fs.OrderQuantity > 1;
+
+- role: user
+  content: |
+    SELECT a.AccountNumber, a.ParentAccountNumber
+    INTO #TempAccounts
+    FROM dbo.DimAccount a
+    WHERE a.ParentAccountNumber IS NOT NULL;
+
+- role: assistant
+  content: |
+    df_temp_accounts = spark.sql("""
+        select a.AccountNumber, a.ParentAccountNumber
+        from my_new_schema.dim_account a
+        where a.ParentAccountNumber is not null
+    """)
+    df_temp_accounts.createOrReplaceTempView("temp_accounts");
+
+- role: user
+  content: |
+    CREATE TABLE #TempOrg AS
+    SELECT OrganizationKey, OrganizationName
+    FROM dbo.DimOrganization;
+
+- role: assistant
+  content: |
+    df_temp_org = spark.sql("""
+        select OrganizationKey, OrganizationName
+        from my_new_schema.dim_organization
+    """)
+    df_temp_org.createOrReplaceTempView("temp_org");

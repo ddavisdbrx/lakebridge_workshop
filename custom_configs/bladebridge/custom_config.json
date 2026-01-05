@@ -1,0 +1,29 @@
+{
+  "inherit_from": [
+    "/Users/dan.davis/.databricks/labs/remorph-transpilers/bladebridge/lib/.venv/lib/python3.11/site-packages/databricks/labs/bladebridge/Converter/Configs/MSSQL/base_sqlserver2databricks_sql.json"
+    
+  ],
+  "prefix_for_variable": ":",
+	"line_subst" : [
+		// convert table names
+		{"from" : "\bdbo\.dimProduct\b", "to" : "ddavis_demo.lakebridge.dim_product"},
+        {"from" : "`EDW`", "to" : "`lakebridge`"},    
+        {"from" : "dbo.", "to" : "lakebridge."},        
+        {"from": "CLUSTERED COLUMNSTORE INDEX", "to": ""}
+	],
+	
+	"function_subst" : [
+        {"from" : "getutcdate", "to": "current_timestamp"}
+    ],
+  
+  "CUSTOM_CONVERTER_MODULES": [
+    "/Users/dan.davis/Documents/lakebridge/custom_configs/bladebridge/temp_table_to_cte_handler.pm"
+  ],
+  
+  "tag_override_list": ["preprocess_routine", "pre_finalization_handler"],
+  
+  "preprocess_file": 1,
+  "preprocess_routine": "::preprocess_select_into_table",
+  
+  "pre_finalization_handler": "::finalize_and_convert_temp_tables_to_cte"
+}

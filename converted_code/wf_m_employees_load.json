@@ -1,0 +1,78 @@
+{
+   "email_notifications" : {
+      "no_alert_for_skipped_runs" : false,
+      "on_failure" : [
+         "%FAILURE_EMAIL_ADDRESS%"
+      ],
+      "on_start" : [
+         "user.name@databricks.com",
+         "%EMAIL_ADDRESS%"
+      ],
+      "on_success" : [
+         "%SUCCESS_EMAIL_ADDRESS%"
+      ]
+   },
+   "max_concurrent_runs" : 10,
+   "name" : "wf_m_employees_load",
+   "notification_settings" : {
+      "no_alert_for_canceled_runs" : false,
+      "no_alert_for_skipped_runs" : false
+   },
+   "run_as" : {
+      "user_name" : "%USER_NAME%"
+   },
+   "schedule" : {
+      "pause_status" : "PAUSED",
+      "quartz_cron_expression" : "20 30 * * * ?",
+      "timezone_id" : "Europe/London"
+   },
+   "tags" : {
+      "cost-center" : "engineering",
+      "team" : "jobs"
+   },
+   "tasks" : [
+      {
+         "description" : "wf_m_employees_load_parameters",
+         "email_notifications" : {},
+         "job_cluster_key" : "auto_scaling_cluster",
+         "notebook_task" : {
+            "notebook_path" : "/Workspace/Users/Conversion_From_Infa_wf_m_employees_load_params.py"
+         },
+         "notification_settings" : {
+            "alert_on_last_attempt" : false,
+            "no_alert_for_canceled_runs" : false,
+            "no_alert_for_skipped_runs" : false
+         },
+         "run_if" : "ALL_SUCCESS",
+         "task_key" : "wf_m_employees_load_parameters",
+         "webhook_notifications" : {}
+      },
+      {
+         "depends_on" : [
+            {
+               "task_key" : "wf_m_employees_load_parameters"
+            }
+         ],
+         "description" : "",
+         "email_notifications" : {},
+         "existing_cluster_id" : "%CLUSTER_ID%",
+         "max_retries" : 3,
+         "min_retry_interval_millis" : 2000,
+         "notebook_task" : {
+            "notebook_path" : "/Workspace/Users/m_employees_load",
+            "source" : "WORKSPACE"
+         },
+         "notification_settings" : {
+            "alert_on_last_attempt" : false,
+            "no_alert_for_canceled_runs" : false,
+            "no_alert_for_skipped_runs" : false
+         },
+         "retry_on_timeout" : false,
+         "run_if" : "ALL_SUCCESS",
+         "task_key" : "s_m_employees_load",
+         "webhook_notifications" : {}
+      }
+   ],
+   "timeout_seconds" : 86400,
+   "webhook_notifications" : {}
+}
